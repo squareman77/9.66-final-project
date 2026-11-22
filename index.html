@@ -51,7 +51,7 @@ const CONFIG = {
   // Google Apps Script web-app URL (ends in /exec). Leave "" to download data locally instead (for piloting).
   SAVE_URL: "",
   // Prolific completion URL, e.g. "https://app.prolific.com/submissions/complete?cc=XXXXXX". "" = no redirect.
-  COMPLETION_URL: "",
+  COMPLETION_URL: "https://script.google.com/macros/s/AKfycbxCGufek1udjVIkVkiGCs1LI7LpmnDWXt-WPFAOJkluSxdOPW906evQP4NgsiGIlY8Z/exec",
   N_PER_SHAPE: 4,           // drawings per shape in the Draw block = set size in the Teach block
   SHAPES: ["triangle", "rectangle", "quadrilateral"],
   // "constrained": rectangle = click one side, then drag out the height (always a true rectangle)
@@ -218,7 +218,7 @@ function consentScreen() {
     const s = screen(`<div class="card">
       <h1>Drawing shapes</h1>
       <div class="consent">
-        <p><strong>[CONSENT TEXT — replace with the approved consent form.]</strong></p>
+        <p><strong></strong></p>
         <p>In this study you will draw some simple shapes by clicking on the screen. It takes about 10–15 minutes.
            Your responses are anonymous and you may stop at any time.</p>
       </div>
@@ -336,16 +336,51 @@ async function saveData() {
   return true;
 }
 
+// Raffle emails are sent in a separate request with no participant ID or drawing data,
+// so they cannot be linked to anyone's responses.
+async function saveRaffle(email) {
+  if (!CONFIG.SAVE_URL) { window.__RAFFLE__ = email; return true; } // piloting without a server
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const r = await fetch(CONFIG.SAVE_URL, {
+        method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ type: "raffle", email }) });
+      if ((await r.json()).ok) return true;
+    } catch (e) { /* retry */ }
+    await new Promise(res => setTimeout(res, 1500));
+  }
+  return false;
+}
+
 async function finalScreen() {
   screen(`<div class="card"><h1>Saving your responses…</h1><p>Please do not close this page.</p></div>`);
   const ok = await saveData();
   window.__DATA__ = DATA; window.__SAVED__ = ok;
   if (ok) {
-    screen(`<div class="card"><h1>Thank you!</h1>
+    const s = screen(`<div class="card"><h1>Thank you!</h1>
       <p>Your responses have been saved. This study looks at how people choose which examples of a shape to draw,
          and whether that changes when the goal is to teach someone.</p>
+      <div class="consent" id="raffle">
+        <p><strong>Optional raffle.</strong> If you would like to be entered into the raffle, enter your email below.
+           Your email is stored separately from your drawings and is used only to contact raffle winners.</p>
+        <div class="row" style="justify-content:flex-start">
+          <input type="email" id="email" placeholder="you@example.com" autocomplete="email" style="flex:1;min-width:0">
+          <button id="enter">Enter raffle</button>
+        </div>
+        <div class="warn" id="rwarn" style="text-align:left"></div>
+      </div>
       ${CONFIG.COMPLETION_URL ? `<p>Click below to return to Prolific.</p><div class="nav"><a href="${CONFIG.COMPLETION_URL}"><button class="primary">Complete study</button></a></div>` : ""}
       </div>`);
+    const enter = s.querySelector("#enter"), rwarn = s.querySelector("#rwarn");
+    enter.onclick = async () => {
+      const email = s.querySelector("#email").value.trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { rwarn.textContent = "Please enter a valid email address."; return; }
+      enter.disabled = true; rwarn.textContent = "";
+      const saved = await saveRaffle(email);
+      s.querySelector("#raffle").innerHTML = saved
+        ? "<p>You have been entered into the raffle. Thank you!</p>"
+        : "<p>Sorry, your raffle entry could not be saved. Please email the researcher to be entered.</p>";
+    };
   } else {
     screen(`<div class="card"><h1>Saving failed</h1>
       <p>Something went wrong saving your data. Please download your responses and send the file to the researcher.</p>
