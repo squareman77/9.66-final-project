@@ -219,8 +219,12 @@ function consentScreen() {
       <h1>Drawing shapes</h1>
       <div class="consent">
         <p><strong></strong></p>
-        <p>In this study you will draw some simple shapes by clicking on the screen. It takes about 10–15 minutes.
-           Your responses are anonymous and you may stop at any time.</p>
+        <p>Thanks for checking this out! This is a survey for my 9.66 project. In this survey you will draw simple shapes by clicking on the screen. It takes less than 5 minutes.
+           At the end you will be prompted to put in your email for a raffle.
+           <br>
+           <br>
+           Thanks, <br>
+           Evan Chang</p>
       </div>
       <p>Please use a computer with a mouse or trackpad.</p>
       <div class="nav"><button class="primary" id="go">I agree, continue</button></div></div>`);
@@ -271,9 +275,8 @@ function transitionScreen() {
   return new Promise(res => {
     const s = screen(`<div class="card">
       <h1>Part 2</h1>
-      <p>Thank you! In this part, you will imagine you are <strong>teaching</strong> someone what a shape is.</p>
-      <p>For each shape, you will draw a <strong>set of ${N_WORD}</strong> drawings on one screen. All ${N_WORD} drawings
-         stay visible, and you can draw them in any order.</p>
+      <p>In this part, you will imagine you are <strong>teaching</strong> someone what a shape is.</p>
+      <p>For each shape, you will draw a <strong>set of ${N_WORD}</strong> drawings on one screen.</p>
       <div class="nav"><button class="primary" id="go">Continue</button></div></div>`);
     s.querySelector("#go").onclick = res;
   });
@@ -358,8 +361,7 @@ async function finalScreen() {
   window.__DATA__ = DATA; window.__SAVED__ = ok;
   if (ok) {
     const s = screen(`<div class="card"><h1>Thank you!</h1>
-      <p>Your responses have been saved. This study looks at how people choose which examples of a shape to draw,
-         and whether that changes when the goal is to teach someone.</p>
+      <p>Your responses have been saved. Thanks so much! </p>
       <div class="consent" id="raffle">
         <p><strong>Optional raffle.</strong> If you would like to be entered into the raffle, enter your email below.
            Your email is stored separately from your drawings and is used only to contact raffle winners.</p>
@@ -374,12 +376,12 @@ async function finalScreen() {
     const enter = s.querySelector("#enter"), rwarn = s.querySelector("#rwarn");
     enter.onclick = async () => {
       const email = s.querySelector("#email").value.trim();
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { rwarn.textContent = "Please enter a valid email address."; return; }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { rwarn.textContent = "Please enter an email address."; return; }
       enter.disabled = true; rwarn.textContent = "";
       const saved = await saveRaffle(email);
       s.querySelector("#raffle").innerHTML = saved
         ? "<p>You have been entered into the raffle. Thank you!</p>"
-        : "<p>Sorry, your raffle entry could not be saved. Please email the researcher to be entered.</p>";
+        : "<p>Sorry, your raffle entry could not be saved. Please email evchang@mit.edu to be entered.</p>";
     };
   } else {
     screen(`<div class="card"><h1>Saving failed</h1>
